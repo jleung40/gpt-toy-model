@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPT Model Sandbox</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            height: 100vh;
+            background: linear-gradient(to bottom, rgb(247, 247, 247), #e0e8ff, #c0d0ff); /* Updated gradient */
+            color: #333;
+        }
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 120px 20px 20px 20px; /* Updated margin to move the content down */
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: transparent; /* Remove the white background */
+            z-index: 1; /* Ensure it's above the white bar */
+        }
+        .top-bar-container {
+            position: fixed; /* Changed to fixed to always stay at the top */
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #ffffff; /* White background bar */
+            padding: 10px 20px; /* Reduced padding */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 2; /* Ensure it's above other content */
+        }
+        h1 {
+            font-size: 1.5em;
+            margin-bottom: 10px; /* Reduced margin */
+            text-align: center;
+        }
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+        }
+        .top-bar div {
+            display: flex;
+            align-items: center;
+        }
+        .top-bar div p {
+            margin-right: 10px;
+            font-size: 0.9em;
+        }
+        .flex-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+        .section {
+            width: 30%;
+        }
+        .section h2 {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        .section p, .section label {
+            font-size: 0.9em;
+        }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .slider {
+            width: 100%;
+        }
+        .output {
+            white-space: pre-wrap;
+            background-color: rgba(255, 255, 255, 0.8); /* Slightly transparent background */
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .button-group {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 0 10px;
+            font-size: 1em;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:disabled {
+            background-color: #ccc;
+        }
+        button:hover:not(:disabled) {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar-container">
+        <h1>GPT Model Hyperparameter Tuning</h1>
+        <div class="top-bar">
+            <div>
+                <p>Epoch:</p>
+                <input type="number" id="epoch" value="0" disabled>
+            </div>
+            <div>
+                <p>Learning rate:</p>
+                <input type="number" step="0.00001" id="learningRate" value="0.00002">
+            </div>
+            <div>
+                <p>Activation:</p>
+                <select id="activation">
+                    <option value="Tanh">Tanh</option>
+                    <option value="ReLU">ReLU</option>
+                    <option value="Sigmoid">Sigmoid</option>
+                </select>
+            </div>
+            <div>
+                <p>Regularization:</p>
+                <select id="regularization">
+                    <option value="None">None</option>
+                    <option value="L1">L1</option>
+                    <option value="L2">L2</option>
+                </select>
+            </div>
+            <div>
+                <p>Problem type:</p>
+                <select id="problemType">
+                    <option value="Classification">Classification</option>
+                    <option value="Regression">Regression</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <div class="flex-container">
+            <div class="section">
+                <h2>Data</h2>
+                <form id="train-form">
+                    <div class="input-group">
+                        <label for="dataset">Which dataset do you want to use?</label>
+                        <select id="dataset" name="dataset">
+                            {% for dataset in datasets %}
+                            <option value="{{ dataset }}">{{ dataset }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="ratio">Ratio of training to test data: <span id="ratioValue">50</span>%</label>
+                        <input type="range" id="ratio" name="ratio" class="slider" min="0" max="100" value="50" oninput="updateSliderValue('ratio')">
+                    </div>
+                    <div class="input-group">
+                        <label for="noise">Noise: <span id="noiseValue">0</span></label>
+                        <input type="range" id="noise" name="noise" class="slider" min="0" max="10" value="0" oninput="updateSliderValue('noise')">
+                    </div>
+                    <div class="input-group">
+                        <label for="batchSize">Batch size:</label>
+                        <input type="number" id="batchSize" name="batchSize" value="32">
+                    </div>
+                    <button type="button" onclick="trainModel()">Regenerate</button>
+                </form>
+            </div>
+            <div class="section">
+                <h2>Hyperparameters</h2>
+                <div class="input-group">
+                    <label for="blockSize">Block size:</label>
+                    <input type="number" id="blockSize" name="blockSize" value="128">
+                </div>
+                <div class="input-group">
+                    <label for="maxIters">Max iterations:</label>
+                    <input type="number" id="maxIters" name="maxIters" value="500">
+                </div>
+                <div class="input-group">
+                    <label for="evalIters">Eval iterations:</label>
+                    <input type="number" id="evalIters" name="evalIters" value="100">
+                </div>
+                <div class="input-group">
+                    <label for="nEmb">Embedding size:</label>
+                    <input type="number" id="nEmb" name="nEmb" value="384">
+                </div>
+                <div class="input-group">
+                    <label for="nHead">Number of heads:</label>
+                    <input type="number" id="nHead" name="nHead" value="4">
+                </div>
+                <div class="input-group">
+                    <label for="nLayer">Number of layers:</label>
+                    <input type="number" id="nLayer" name="nLayer" value="4">
+                </div>
+                <div class="input-group">
+                    <label for="dropout">Dropout rate:</label>
+                    <input type="number" step="0.01" id="dropout" name="dropout" value="0.2">
+                </div>
+            </div>
+            <div class="section">
+                <h2>Output</h2>
+                <p>Test loss: <span id="testLoss">0.545</span></p>
+                <p>Training loss: <span id="trainingLoss">0.499</span></p>
+                <div id="output" class="output">Training output will appear here...</div>
+            </div>
+        </div>
+        <div class="button-group">
+            <button onclick="trainModel()">Train Model</button>
+            <button onclick="generateText()">Generate Text</button>
+        </div>
+    </div>
+    <script>
+        function updateSliderValue(sliderId) {
+            const slider = document.getElementById(sliderId);
+            const valueSpan = document.getElementById(sliderId + 'Value');
+            valueSpan.innerText = slider.value;
+        }
+
+        async function trainModel() {
+            const form = document.getElementById('train-form');
+            const formData = new FormData(form);
+            const params = new URLSearchParams(formData);
+
+            const response = await fetch('/train', {
+                method: 'POST',
+                body: params
+            });
+
+            const result = await response.json();
+            document.getElementById('output').innerText = result.selected_dataset;
+        }
+
+        async function generateText() {
+            const response = await fetch('/train', {
+                method: 'POST',
+                body: new URLSearchParams()
+            });
+
+            const result = await response.json();
+            document.getElementById('output').innerText = result.selected_dataset;
+        }
+    </script>
+</body>
+</html>
